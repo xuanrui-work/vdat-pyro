@@ -87,7 +87,7 @@ class VDTNetRaw(nn.Module):
             # sample (z,h)->x
             loc = self.dec(torch.cat([z, h], dim=1))
             # validate_args=False for relaxed Bernoulli values
-            pyro.sample('x', dist.Bernoulli(probs=loc, validate_args=False).to_event(3), obs=x)
+            pyro.sample('x', dist.Normal(loc=loc, scale=1).to_event(3), obs=x)
     
     def guide(self, x, y=None, d='src'):
         N = x.shape[0]
@@ -137,6 +137,23 @@ class VDTNet(VDTNetRaw):
     def set_hparams(self, hparams):
         self.hparams = hparams
     
+    def requires_grad(self, modules, requires_grad=True):
+        if not isinstance(modules, (list, tuple)):
+            modules = [modules]
+        for module in modules:
+            for param in module.parameters():
+                param.requires_grad = requires_grad
+    
+    def grad_mode(self, mode='network'):
+        if mode == 'network':
+            self.requires_grad([self.enc_zA, self.enc_zB, self.enc_h, self.dec, self.classifier], True)
+            self.requires_grad([self.prior_z, self.prior_h], False)
+        elif mode == 'priors':
+            self.requires_grad([self.enc_zA, self.enc_zB, self.enc_h, self.dec, self.classifier], False)
+            self.requires_grad([self.prior_z, self.prior_h], True)
+        else:
+            raise ValueError(f'invalid grad mode={mode}')
+    
     def forward(self, x, y=None, d='src'):
         # infer latents and outputs
         guide_trace = poutine.trace(self.guide).get_trace(x, y, d)
@@ -148,7 +165,7 @@ class VDTNet(VDTNetRaw):
             y1 = guide_trace.nodes['y']['fn'].probs
         else:
             y1 = F.one_hot(y, self.n_cls).float()
-        x1 = model_trace.nodes['x']['fn'].base_dist.probs
+        x1 = model_trace.nodes['x']['fn'].base_dist.loc
 
         outputs = {
             'x': x,
@@ -181,7 +198,7 @@ class VDTNet(VDTNetRaw):
 
             outputs.update({
                 'z_AB': z_AB,
-                'x_AB': model_trace.nodes['x']['fn'].base_dist.probs
+                'x_AB': model_trace.nodes['x']['fn'].base_dist.loc
             })
         elif d == 'tgt':
             R_BA, b_BA = find_transform(mu2, cov_L2, mu1, cov_L1)
@@ -192,7 +209,7 @@ class VDTNet(VDTNetRaw):
 
             outputs.update({
                 'z_BA': z_BA,
-                'x_BA': model_trace.nodes['x']['fn'].base_dist.probs
+                'x_BA': model_trace.nodes['x']['fn'].base_dist.loc
             })
         
         return outputs
