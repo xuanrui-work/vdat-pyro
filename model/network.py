@@ -10,7 +10,9 @@ import pyro.poutine as poutine
 class VDTNet(VDTNetRaw):
     def __init__(self, hparams=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.set_hparams(hparams)
+        self.grad_mode('network')
     
     def set_hparams(self, hparams):
         self.hparams = hparams
@@ -29,8 +31,13 @@ class VDTNet(VDTNetRaw):
         elif mode == 'priors':
             self.requires_grad([self.enc_zA, self.enc_zB, self.enc_h, self.dec, self.classifier], False)
             self.requires_grad([self.prior_z, self.prior_h], True)
+        elif mode == 'classifier':
+            self.requires_grad([self.enc_zA, self.enc_zB, self.enc_h, self.dec], False)
+            self.requires_grad([self.prior_z, self.prior_h], False)
+            self.requires_grad(self.classifier, True)
         else:
             raise ValueError(f'invalid grad mode={mode}')
+        self.mode = mode
     
     def forward(self, x, y=None, d='src'):
         # infer latents and outputs
@@ -41,8 +48,10 @@ class VDTNet(VDTNetRaw):
         h = guide_trace.nodes['h']['value']
         if y is None:
             y1 = guide_trace.nodes['y']['fn'].probs
+            y1_lo = guide_trace.nodes['y']['fn'].logits
         else:
             y1 = F.one_hot(y, self.n_cls).float()
+            y1_lo = y1
         x1 = model_trace.nodes['x']['fn'].base_dist.loc
 
         outputs = {
@@ -55,7 +64,8 @@ class VDTNet(VDTNetRaw):
             'h_mu': guide_trace.nodes['h']['fn'].loc,
             'h_cov_L': guide_trace.nodes['h']['fn'].scale_tril,
             'x1': x1,
-            'y1': y1
+            'y1': y1,
+            'y1_lo': y1_lo
         }
 
         if d == 'src':
