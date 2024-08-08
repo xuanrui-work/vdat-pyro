@@ -67,7 +67,7 @@ class VDTNetRaw(nn.Module):
                 cov_L = self.prior_z.get_cov_L()[1]
             else:
                 raise ValueError(f'invalid d={d}')
-            z = pyro.sample('z', dist.MultivariateNormal(mu, scale_tril=cov_L))
+            z = pyro.sample('z', dist.MultivariateNormal(mu, scale_tril=cov_L).expand((N,)))
 
             # sample y->h
             y = pyro.sample('y', dist.Categorical(logits=self.prior_h.pi).expand((N,)), obs=y)
