@@ -48,6 +48,8 @@ class VDTNetRaw(nn.Module):
 
         self.prior_z = CGaussPrior(2, z_dim, requires_grad=True)
         self.prior_h = CGaussPrior(n_cls, h_dim, requires_grad=True)
+
+        self.validate_args = False
     
     def model(self, x, y=None, d='src'):
         """
@@ -78,7 +80,15 @@ class VDTNetRaw(nn.Module):
             # sample (z,h)->x
             loc = self.dec(torch.cat([z, h], dim=1))
             # validate_args=False for relaxed Bernoulli values
-            pyro.sample('x', dist.Normal(loc=loc, scale=1).to_event(3), obs=x)
+            pyro.sample(
+                'x',
+                dist.Normal(
+                    loc=loc,
+                    scale=1,
+                    validate_args=self.validate_args
+                ).to_event(3),
+                obs=x
+            )
     
     def guide(self, x, y=None, d='src'):
         N = x.shape[0]
@@ -90,7 +100,14 @@ class VDTNetRaw(nn.Module):
                 z_mu, z_cov_L = self.enc_zB(x)
             else:
                 raise ValueError(f'invalid d={d}')
-            z = pyro.sample('z', dist.MultivariateNormal(z_mu, scale_tril=z_cov_L))
+            z = pyro.sample(
+                'z',
+                dist.MultivariateNormal(
+                    z_mu,
+                    scale_tril=z_cov_L,
+                    validate_args=self.validate_args
+                )
+            )
 
             # sample x->y
             if y is None:
@@ -100,7 +117,14 @@ class VDTNetRaw(nn.Module):
             # sample (x,y)->h
             y_embed = self.cls_embed(F.one_hot(y, self.n_cls).float())
             h_mu, h_cov_L = self.enc_h(torch.cat([x, y_embed], dim=1))
-            h = pyro.sample('h', dist.MultivariateNormal(h_mu, scale_tril=h_cov_L))
+            h = pyro.sample(
+                'h',
+                dist.MultivariateNormal(
+                    h_mu,
+                    scale_tril=h_cov_L,
+                    validate_args=self.validate_args
+                )
+            )
 
     @pyro.contrib.autoname.scope(prefix='cls')
     def model_cls(self, x, y=None):
