@@ -79,7 +79,6 @@ class VDTNetRaw(nn.Module):
 
             # sample (z,h)->x
             loc = self.dec(torch.cat([z, h], dim=1))
-            # validate_args=False for relaxed Bernoulli values
             pyro.sample(
                 'x',
                 dist.Normal(
