@@ -12,7 +12,7 @@ class MLP(nn.Module):
         out_dim,
         hidden_dims=None,
         activation=lambda: nn.LeakyReLU(0.2, inplace=True),
-        batch_norm=True
+        batch_norm=False
     ):
         super().__init__()
 
@@ -43,7 +43,7 @@ class CNN(nn.Module):
         hidden_dims=(64, 128, 256, 512),
         resize=(0, 2, 0, 2),
         activation=lambda: nn.LeakyReLU(0.2, inplace=True),
-        batch_norm=True
+        batch_norm=False
     ):
         super().__init__()
 
