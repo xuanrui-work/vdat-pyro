@@ -1,3 +1,5 @@
+from .bn import *
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -31,10 +33,12 @@ class MLP(nn.Module):
             in_features = hd
         layers += [nn.Linear(in_features, out_dim)]
 
-        self.layers = nn.Sequential(*layers)
+        self.layers = nn.ModuleList(layers)
     
     def forward(self, x):
-        return self.layers(x)
+        for layer in self.layers:
+            x = layer(x)
+        return x
 
 class CNN(nn.Module):
     def __init__(
@@ -67,13 +71,15 @@ class CNN(nn.Module):
             layers += [activation()]
             in_channels = hd
         
-        self.layers = nn.Sequential(*layers)
+        self.layers = nn.ModuleList(layers)
 
         self.in_shape = in_shape
         self.out_shape = tuple(out_shape)
     
     def forward(self, x):
-        return self.layers(x)
+        for layer in self.layers:
+            x = layer(x)
+        return x
 
 class Decoder(nn.Module):
     def __init__(
@@ -87,33 +93,43 @@ class Decoder(nn.Module):
     ):
         super().__init__()
 
-        layers = []
+        in_layers = []
 
         if np.prod(in_shape) != la_dim:
-            layers += [nn.Linear(la_dim, np.prod(in_shape))]
+            in_layers += [nn.Linear(la_dim, np.prod(in_shape))]
             warnings.warn(f'incompatible la_dim={la_dim} and in_shape={in_shape}. nn.Linear used to reshape.')
         
-        layers += [nn.Unflatten(1, in_shape)]
+        in_layers += [nn.Unflatten(1, in_shape)]
+        self.in_layers = nn.Sequential(*in_layers)
         
         cnn_block = CNN(in_shape, hidden_dims, upsample)
-        layers += [cnn_block]
+        self.cnn_block = cnn_block
+
+        self.bn_layers = nn.ModuleList([DSBatchNorm2d(hd) for hd in hidden_dims])
+
+        out_layers = []
 
         if cnn_block.out_shape[1:] != out_shape[1:]:
-            layers += [nn.Upsample(size=out_shape[1:])]
+            out_layers += [nn.Upsample(size=out_shape[1:])]
             warnings.warn(f'incompatible out_shape={out_shape} and cnn_block.out_shape={cnn_block.out_shape}. nn.Upsample used to reshape.')
         
-        layers += [nn.Conv2d(hidden_dims[-1], out_shape[0], kernel_size=3, padding='same')]
-
-        self.layers = nn.Sequential(*layers)
-        self.normal_fn = normal_fn()
+        out_layers += [nn.Conv2d(hidden_dims[-1], out_shape[0], kernel_size=3, padding='same')]
+        out_layers += [normal_fn()]
+        self.out_layers = nn.Sequential(*out_layers)
 
         self.la_dim = la_dim
         self.in_shape = in_shape
         self.out_shape = out_shape
     
-    def forward(self, h):
-        x = self.layers(h).view(-1, *self.out_shape)
-        x = self.normal_fn(x)
+    def forward(self, h, d):
+        x = self.in_layers(h)
+        bn_idx = 0
+        for i, layer in enumerate(self.cnn_block.layers):
+            x = layer(x)
+            if isinstance(layer, nn.Conv2d):
+                x = self.bn_layers[bn_idx](x, d)
+                bn_idx += 1
+        x = self.out_layers(x)
         return x
 
 class Encoder(nn.Module):
@@ -126,9 +142,12 @@ class Encoder(nn.Module):
     ):
         super().__init__()
 
-        self.cnn_block = CNN(in_shape, hidden_dims, [-mp for mp in maxpools])
+        cnn_block = CNN(in_shape, hidden_dims, [-mp for mp in maxpools])
+        self.cnn_block = cnn_block
+
+        self.bn_layers = nn.ModuleList([DSBatchNorm2d(hd) for hd in hidden_dims])
         
-        in_dim = np.prod(self.cnn_block.out_shape)
+        in_dim = np.prod(cnn_block.out_shape)
         cov_l_dim = (la_dim * (la_dim + 1)) // 2
 
         self.op_mu = nn.Linear(in_dim, la_dim)
@@ -136,10 +155,16 @@ class Encoder(nn.Module):
 
         self.in_shape = in_shape
         self.la_dim = la_dim
-        self.out_shape = self.cnn_block.out_shape
+        self.out_shape = cnn_block.out_shape
     
-    def forward(self, x):
-        x = self.cnn_block(x).flatten(1)
+    def forward(self, x, d):
+        bn_idx = 0
+        for i, layer in enumerate(self.cnn_block.layers):
+            x = layer(x)
+            if isinstance(layer, nn.Conv2d):
+                x = self.bn_layers[bn_idx](x, d)
+                bn_idx += 1
+        x = x.flatten(1)
         mu = self.op_mu(x)
         cov_l = self.op_cov_l(x)
         
@@ -164,12 +189,20 @@ class Classifier(nn.Module):
         super().__init__()
 
         self.cnn_block = CNN(in_shape, hidden_dims, [-mp for mp in maxpools])
+        self.bn_layers = nn.ModuleList([DSBatchNorm2d(hd) for hd in hidden_dims])
+
         self.op_cls = nn.Linear(np.prod(self.cnn_block.out_shape), n_cls)
 
         self.in_shape = in_shape
         self.n_cls = n_cls
     
-    def forward(self, x):
-        x = self.cnn_block(x).flatten(1)
+    def forward(self, x, d):
+        bn_idx = 0
+        for i, layer in enumerate(self.cnn_block.layers):
+            x = layer(x)
+            if isinstance(layer, nn.Conv2d):
+                x = self.bn_layers[bn_idx](x, d)
+                bn_idx += 1
+        x = x.flatten(1)
         x = self.op_cls(x)
         return x

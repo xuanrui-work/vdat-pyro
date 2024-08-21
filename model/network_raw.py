@@ -78,7 +78,7 @@ class VDTNetRaw(nn.Module):
             h = pyro.sample('h', dist.MultivariateNormal(mu, scale_tril=cov_L))
 
             # sample (z,h)->x
-            loc = self.dec(torch.cat([z, h], dim=1))
+            loc = self.dec(torch.cat([z, h], dim=1), d)
             pyro.sample(
                 'x',
                 dist.Normal(
@@ -94,9 +94,9 @@ class VDTNetRaw(nn.Module):
         with pyro.plate('data', N):
             # sample x->z
             if d == 'src':
-                z_mu, z_cov_L = self.enc_zA(x)
+                z_mu, z_cov_L = self.enc_zA(x, d)
             elif d == 'tgt':
-                z_mu, z_cov_L = self.enc_zB(x)
+                z_mu, z_cov_L = self.enc_zB(x, d)
             else:
                 raise ValueError(f'invalid d={d}')
             z = pyro.sample(
@@ -110,12 +110,12 @@ class VDTNetRaw(nn.Module):
 
             # sample x->y
             if y is None:
-                logits = self.classifier(x)
+                logits = self.classifier(x, d)
                 y = pyro.sample('y', dist.Categorical(logits=logits))
             
             # sample (x,y)->h
             y_embed = self.cls_embed(F.one_hot(y, self.n_cls).float())
-            h_mu, h_cov_L = self.enc_h(torch.cat([x, y_embed], dim=1))
+            h_mu, h_cov_L = self.enc_h(torch.cat([x, y_embed], dim=1), d)
             h = pyro.sample(
                 'h',
                 dist.MultivariateNormal(
@@ -126,7 +126,7 @@ class VDTNetRaw(nn.Module):
             )
 
     @pyro.contrib.autoname.scope(prefix='cls')
-    def model_cls(self, x, y=None):
+    def model_cls(self, x, y=None, d='src'):
         """
         auxiliary model for straight-through classification.
         """
@@ -136,7 +136,7 @@ class VDTNetRaw(nn.Module):
         N = x.shape[0]
         with pyro.plate('data', N):
             # sample x->y
-            logits = self.classifier(x)
+            logits = self.classifier(x, d)
             pyro.sample('y', dist.Categorical(logits=logits), obs=y)
     
     @pyro.contrib.autoname.scope(prefix='cls')
