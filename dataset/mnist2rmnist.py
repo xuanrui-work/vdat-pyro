@@ -7,8 +7,8 @@ import torchvision.transforms.v2 as v2
 class MNIST2RMNIST(BaseDataset):
     def __init__(
         self,
-        rotate_deg=30,
         reverse=False,
+        rotate_deg=45,
         image_size=(32, 32),
         mnist_save_dir='./cache/mnist',
         **kwargs
