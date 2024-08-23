@@ -20,7 +20,7 @@ class BaseDataset:
         self.src_train = self.src_val = self.src_test = None
         self.tgt_train = self.tgt_val = self.tgt_test = None
     
-    def get_loaders(self, which='src'):
+    def get_loaders(self, which):
         assert which in ('src', 'tgt'), (
             f'invalid value for which: {which}'
         )

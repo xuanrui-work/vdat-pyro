@@ -109,7 +109,7 @@ class Decoder(nn.Module):
 
         out_layers = []
 
-        if cnn_block.out_shape[1:] != out_shape[1:]:
+        if cnn_block.out_shape[1:] != tuple(out_shape)[1:]:
             out_layers += [nn.Upsample(size=out_shape[1:])]
             warnings.warn(f'incompatible out_shape={out_shape} and cnn_block.out_shape={cnn_block.out_shape}. nn.Upsample used to reshape.')
         
