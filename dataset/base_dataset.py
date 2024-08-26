@@ -1,6 +1,7 @@
 import torch
-import torchvision
-import torchvision.transforms.v2 as v2
+from torch.utils.data import DataLoader
+
+__all__ = ['BaseDataset']
 
 class BaseDataset:
     def __init__(
@@ -25,21 +26,21 @@ class BaseDataset:
             f'invalid value for which: {which}'
         )
 
-        train_loader = torch.utils.data.DataLoader(
+        train_loader = DataLoader(
             self.src_train if which == 'src' else self.tgt_train,
             batch_size=self.batch_size,
             shuffle=True,
             num_workers=self.num_workers,
             pin_memory=True
         )
-        val_loader = torch.utils.data.DataLoader(
+        val_loader = DataLoader(
             self.src_val if which == 'src' else self.tgt_val,
             batch_size=self.batch_size,
             shuffle=False,
             num_workers=self.num_workers,
             pin_memory=True
         )
-        test_loader = torch.utils.data.DataLoader(
+        test_loader = DataLoader(
             self.src_test if which == 'src' else self.tgt_test,
             batch_size=self.batch_size,
             shuffle=False,
