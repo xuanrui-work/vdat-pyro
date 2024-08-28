@@ -8,6 +8,8 @@ import numpy as np
 from tqdm import tqdm
 from pathlib import Path
 
+__all__ = ['BaseDataset']
+
 class BaseDataset:
     def __init__(
         self,

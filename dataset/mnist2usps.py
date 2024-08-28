@@ -6,6 +6,8 @@ import torch.utils.data as data
 import torchvision.datasets as datasets
 import torchvision.transforms.v2 as v2
 
+__all__ = ['MNIST2USPS']
+
 class MNIST2USPS(BaseDataset):
     def __init__(
         self,

@@ -6,9 +6,7 @@ import torch.utils.data as data
 import torchvision.datasets as datasets
 import torchvision.transforms.v2 as v2
 
-__all__ = [
-    'MNIST2SVHN'
-]
+__all__ = ['MNIST2SVHN']
 
 class MNIST2SVHN(BaseDataset):
     def __init__(
