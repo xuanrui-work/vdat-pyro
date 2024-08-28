@@ -1,63 +1,81 @@
 from .base_dataset import BaseDataset
 
 import torch
-import torchvision
+import torch.utils.data as data
+
+import torchvision.datasets as datasets
 import torchvision.transforms.v2 as v2
 
-__all__ = ['MNIST2SVHN']
+__all__ = [
+    'MNIST2SVHN'
+]
 
 class MNIST2SVHN(BaseDataset):
     def __init__(
         self,
-        reverse=False,
-        image_size=(32, 32),
-        mnist_save_dir='./cache/mnist', svhn_save_dir='./cache/svhn',
+        image_size: tuple[int,int] = (32, 32),
+        save_dir_A: str = './cache/mnist',
+        save_dir_B: str = './cache/svhn',
         **kwargs
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            save_dir_A=save_dir_A,
+            save_dir_B=save_dir_B,
+            **kwargs
+        )
 
-        mnist_transform = v2.Compose([
+        self.image_size = image_size
+
+        self.transforms_A = [
             v2.ToImage(),
-            v2.Resize(image_size),
+            v2.Resize(self.image_size),
             v2.Lambda(self.lambda_repeat),
             v2.ToDtype(torch.float, scale=True),
-        ])
-        svhn_transform = v2.Compose([
+        ]
+
+        self.transforms_B = [
             v2.ToImage(),
-            v2.Resize(image_size),
+            v2.Resize(self.image_size),
             v2.ToDtype(torch.float, scale=True),
-        ])
-
-        mnist_train = torchvision.datasets.MNIST(
-            root=mnist_save_dir,
-            train=True,
-            transform=mnist_transform,
-            download=True
-        )
-        mnist_test = torchvision.datasets.MNIST(
-            root=mnist_save_dir,
-            train=False,
-            transform=mnist_transform,
-            download=True
-        )
-        mnist_train, mnist_val = torch.utils.data.random_split(mnist_train, [1-self.val_split, self.val_split])
-
-        svhn_train = torchvision.datasets.SVHN(
-            root=svhn_save_dir,
-            split='extra',
-            transform=svhn_transform,
-            download=True
-        )
-        svhn_train, svhn_test = torch.utils.data.random_split(svhn_train, [1-self.val_split, self.val_split])
-        svhn_train, svhn_val = torch.utils.data.random_split(svhn_train, [1-self.val_split, self.val_split])
-
-        if not reverse:
-            self.src_train, self.src_val, self.src_test = mnist_train, mnist_val, mnist_test
-            self.tgt_train, self.tgt_val, self.tgt_test = svhn_train, svhn_val, svhn_test
-        else:
-            self.src_train, self.src_val, self.src_test = svhn_train, svhn_val, svhn_test
-            self.tgt_train, self.tgt_val, self.tgt_test = mnist_train, mnist_val, mnist_test
+        ]
     
     # for solving "Can't pickle local object `...<lambda>`" when num_workers > 0 for DataLoader
     def lambda_repeat(self, x):
         return x.repeat(3, 1, 1)
+    
+    def init_mnist(self, transforms):
+        train = datasets.MNIST(
+            root=self.save_dir_A,
+            train=True,
+            transform=v2.Compose(transforms),
+            download=True
+        )
+        test = datasets.MNIST(
+            root=self.save_dir_A,
+            train=False,
+            transform=v2.Compose(transforms),
+            download=True
+        )
+        train, val = data.random_split(train, [1-self.val_split, self.val_split])
+
+        self.train_A = train
+        self.val_A = val
+        self.test_A = test
+    
+    def init_svhn(self, transforms):
+        train = datasets.SVHN(
+            root=self.save_dir_B,
+            split='extra',
+            transform=v2.Compose(transforms),
+            download=True
+        )
+        train, test = data.random_split(train, [1-self.test_split, self.test_split])
+        train, val = data.random_split(train, [1-self.val_split, self.val_split])
+
+        self.train_B = train
+        self.val_B = val
+        self.test_B = test
+
+    def load_datasets(self, transforms_A, transforms_B):
+        self.init_mnist(transforms_A)
+        self.init_svhn(transforms_B)
