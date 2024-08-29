@@ -20,3 +20,9 @@ dataset_dict = {
     'mnist2usps': lambda **kwargs: MNIST2USPS(reverse=False, **kwargs),
     'usps2mnist': lambda **kwargs: MNIST2USPS(reverse=True, **kwargs),
 }
+
+def get_dataset_cls(name: str):
+    try:
+        dataset_cls = dataset_dict[name]
+    except KeyError as err:
+        raise ValueError(f'invalid dataset name={name}') from err
