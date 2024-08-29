@@ -298,7 +298,9 @@ def main():
         else:
             print(f'\t{k}: {default[k]} => {config[k]}')
 
-    dataset = ds.dataset_dict[config['dataset']](
+    dataset_cls = ds.get_dataset_cls(args.dataset)
+
+    dataset = dataset_cls[config['dataset']](
         batch_size=config['batch_size'],
         image_size=config['image_size'][1:],
         val_split=config['val_split']

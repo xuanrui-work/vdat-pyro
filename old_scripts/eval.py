@@ -92,7 +92,9 @@ def main():
     save_dir = pathlib.Path(args.save_dir)
     save_dir.mkdir(parents=True, exist_ok=False)
 
-    dataset = ds.dataset_dict[args.dataset](
+    dataset_cls = ds.get_dataset_cls(args.dataset)
+
+    dataset = dataset_cls(
         batch_size=args.batch_size,
         val_split=0
     )
