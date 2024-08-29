@@ -1,4 +1,5 @@
 from model.network import VDTNet
+import dataset as ds
 
 import torch
 import torch.nn as nn
@@ -9,8 +10,6 @@ import pyro.infer
 import pyro.poutine
 
 from tqdm import tqdm
-
-from dataset_dict import datasets
 
 import argparse
 import yaml
@@ -80,7 +79,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--model', type=str, required=True)
-    parser.add_argument('--dataset', type=str, required=True, choices=datasets.keys())
+    parser.add_argument('--dataset', type=str, required=True, choices=ds.dataset_dict.keys())
     parser.add_argument('--batch_size', type=int, default=32)
 
     parser.add_argument('--save_dir', type=str, required=True)
@@ -93,7 +92,7 @@ def main():
     save_dir = pathlib.Path(args.save_dir)
     save_dir.mkdir(parents=True, exist_ok=False)
 
-    dataset = datasets[args.dataset](
+    dataset = ds.dataset_dict[args.dataset](
         batch_size=args.batch_size,
         val_split=0
     )

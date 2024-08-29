@@ -1,6 +1,8 @@
 from model.network import VDTNet
 from model.distrib.dist_fn import *
 
+import dataset as ds
+
 from eval import evaluate
 from utils.vis import Visualizer
 
@@ -16,8 +18,6 @@ import numpy as np
 
 from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
-
-from dataset_dict import datasets
 
 from collections import defaultdict
 
@@ -298,7 +298,7 @@ def main():
         else:
             print(f'\t{k}: {default[k]} => {config[k]}')
 
-    dataset = datasets[config['dataset']](
+    dataset = ds.dataset_dict[config['dataset']](
         batch_size=config['batch_size'],
         image_size=config['image_size'][1:],
         val_split=config['val_split']
