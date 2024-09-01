@@ -9,11 +9,11 @@ def create_uda_dataset(
 ) -> MultiLoader:
     r"""Create dataset for UDA using `name`.
     Args:
-        name: Name of the dataset in the format of "<src_cls>2<tgt_cls>". where `src_cls` and 
+        name: Name of the dataset in the format of "{src_cls}2{tgt_cls}". where `src_cls` and 
             `tgt_cls` are the names of the classes of the src and tgt datasets written in `datasets`.
-        s_kwargs: Keyword arguments for the source dataset.
-        t_kwargs: Keyword arguments for the target dataset.
-        kwargs: Keyword arguments for the both datasets.
+        s_kwargs: Keyword arguments for the src dataset.
+        t_kwargs: Keyword arguments for the tgt dataset.
+        kwargs: Keyword arguments for both src and tgt datasets.
     Returns:
         The dataset for UDA in the form of a `MultiLoader`.
     """
@@ -31,7 +31,7 @@ def create_uda_dataset(
     try:
         t_cls = getattr(datasets, t_cls_str)
     except AttributeError as err:
-        raise AttributeError(f'dataset "{t_cls_str}" not found') from err
+        raise ValueError(f'dataset "{t_cls_str}" not found') from err
     
     s_args = kwargs.copy()
     s_args.update(s_kwargs)

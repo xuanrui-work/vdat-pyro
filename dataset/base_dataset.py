@@ -4,6 +4,8 @@ from torch.utils.data import DataLoader
 import torchvision.transforms.v2 as v2
 
 import numpy as np
+
+from pathlib import Path
 from tqdm import tqdm
 
 class BaseDataset:
@@ -17,7 +19,7 @@ class BaseDataset:
         test_split: float = None,
         num_workers: int = 0
     ):
-        self.root = root
+        self.root = Path(root)
         self.transforms = transforms
 
         self.normalize = normalize
