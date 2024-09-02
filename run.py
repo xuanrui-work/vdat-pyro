@@ -75,10 +75,20 @@ def main():
     
     # load dataset
     import dataset.utils
+
+    name = options.dataset.src.cls + '2' + options.dataset.tgt.cls
+    s_kwargs = options.dataset.src.get('kwargs', None)
+    t_kwargs = options.dataset.tgt.get('kwargs', None)
+
+    if s_kwargs is not None:
+        s_kwargs = s_kwargs.to_dict()
+    if t_kwargs is not None:
+        t_kwargs = t_kwargs.to_dict()
+
     loader = dataset.utils.create_uda_dataset(
-        options.dataset.src.cls + '2' + options.dataset.tgt.cls,
-        options.dataset.get('s_kwargs', None),
-        options.dataset.get('t_kwargs', None),
+        name,
+        s_kwargs,
+        t_kwargs,
         image_size=options.model.in_shape[1:],
         batch_size=options.batch_size,
         val_split=options.dataset.val_split
