@@ -85,7 +85,7 @@ class Trainer(TrainRunner):
             options
         )
     
-    def init_visualizer(self):
+    def init_visualize(self):
         self.vis = Visualizer(
             self.model,
             self.writer,
@@ -101,6 +101,14 @@ class Trainer(TrainRunner):
             'val': [get_vis(loader) for loader in self.val_loaders],
             'test': [get_vis(loader) for loader in self.test_loaders]
         }
+    
+    def visualize(self):
+        vis_train = self.vis_data['train']
+        vis_val = self.vis_data['val']
+
+        self.vis.vis_samples((vis_train[0][0], vis_train[1][0]), self.n_step, 'train', mode='both')
+        self.vis.vis_samples((vis_val[0][0], vis_val[1][0]), self.n_step, 'val', mode='both')
+        self.vis.vis_priors(self.n_step, 'priors')
     
     def before_run(self):
         super().before_run()
@@ -120,7 +128,7 @@ class Trainer(TrainRunner):
         oparams = self.options.oparams
         model = self.model
 
-        self.init_visualizer()
+        self.init_visualize()
 
         # ELBO loss functions
         self.elbo_fn_s = pyro.infer.Trace_ELBO().differentiable_loss
@@ -151,6 +159,9 @@ class Trainer(TrainRunner):
 
         # initialize model
         model.set_hparams(hparams)
+
+        # initial visualization
+        self.visualize()
     
     def step(self, xs, ys, xt, yt):
         self.last_batch = (xs, ys, xt, yt)
@@ -252,18 +263,6 @@ class Trainer(TrainRunner):
             if k not in self.all_traine_stats:
                 self.all_traine_stats[k] = []
             self.all_traine_stats[k] += [v]
-
-    def after_epoch(self):
-        super().after_epoch()
-
-        if self.n_epoch % self.options.val_every == 0:
-            # visualize
-            vis_train = self.vis_data['train']
-            vis_val = self.vis_data['val']
-
-            self.vis.vis_samples((vis_train[0][0], vis_train[1][0]), self.n_step, 'train', mode='both')
-            self.vis.vis_samples((vis_val[0][0], vis_val[1][0]), self.n_step, 'val', mode='both')
-            self.vis.vis_priors(self.n_step, 'priors')
     
     def after_run(self):
         super().after_run()

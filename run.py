@@ -34,6 +34,8 @@ def main():
         save_dir.mkdir()
     else:
         save_dir = Path(args.save_dir)
+    
+    print(f'save_dir={save_dir.absolute()}')
 
     with open(args.config, 'r') as f:
         options = yaml.safe_load(f)
@@ -89,6 +91,7 @@ def main():
     # print resulted stats
     if args.subcmd == 'train':
         pprint(runner.test_stats)
+        pprint(runner.test_stats_bm)
     
     elif args.subcmd == 'eval':
         pprint(runner.cum_stats)
