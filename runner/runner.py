@@ -56,7 +56,7 @@ class EvalRunner(BaseRunner):
             self.cum_stats[k] = v / self.n_samples
         # save stats
         if self.save_dir:
-            np.save(self.save_dir/'cum_stats.npy', self.cum_stats)
+            self.save_stats(self.save_dir/'cum_stats.yml', self.cum_stats)
 
     def step(self, *args, **kwargs) -> dict[str, torch.Tensor]:
         raise NotImplementedError
@@ -181,12 +181,6 @@ class TrainRunner(BaseRunner):
     
     def visualize(self):
         pass
-
-    def save_model(self, path: str):
-        torch.save(self.model.state_dict(), path)
-    
-    def load_model(self, path: str):
-        self.model.load_state_dict(torch.load(path))
     
     def before_run(self):
         super().before_run()
@@ -253,8 +247,8 @@ class TrainRunner(BaseRunner):
             self.save_model(self.save_dir/'last_model.pth')
 
             # save stats
-            np.save(self.save_dir/'train_stats.npy', self.all_train_stats)
-            np.save(self.save_dir/'val_stats.npy', self.all_val_stats)
+            self.save_stats(self.save_dir/'train_stats.yml', self.all_train_stats)
+            self.save_stats(self.save_dir/'val_stats.yml', self.all_val_stats)
     
     def after_run(self):
         super().after_run()
@@ -267,7 +261,7 @@ class TrainRunner(BaseRunner):
         self.test_stats = test_stats.copy()
 
         # save stats
-        np.save(self.save_dir/'test_stats.npy', test_stats)
+        self.save_stats(self.save_dir/'test_stats.yml', test_stats)
 
         # stats on best model
         self.model.load_state_dict(torch.load(self.save_dir/'best_model.pth'))
@@ -275,7 +269,7 @@ class TrainRunner(BaseRunner):
         test_stats_bm = self.eval_runner.execute(self.test_loaders)
         self.test_stats_bm = test_stats_bm.copy()
 
-        np.save(self.save_dir/'test_stats_bm.npy', test_stats_bm)
+        self.save_stats(self.save_dir/'test_stats_bm.yml', test_stats_bm)
 
         # restore model
         self.load_model(self.save_dir/'last_model.pth')

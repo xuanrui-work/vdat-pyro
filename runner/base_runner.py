@@ -32,6 +32,20 @@ class BaseRunner:
         self.device = options.device
         self.batch_size = options.batch_size
     
+    def save_model(self, path: str):
+        torch.save(self.model.state_dict(), path)
+    
+    def load_model(self, path: str):
+        self.model.load_state_dict(torch.load(path))
+    
+    def save_stats(self, path: str, stats: dict):
+        with open(path, 'w') as f:
+            yaml.safe_dump(stats, f, default_flow_style=True)
+    
+    def load_stats(self, path: str):
+        with open(path, 'r') as f:
+            return yaml.safe_load(f)
+    
     def before_run(self):
         pass
 
