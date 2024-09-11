@@ -48,7 +48,7 @@ def main():
 
     checkpoint = options.checkpoint or args.checkpoint
     if checkpoint is not None:
-        model = model.load_from_checkpoint(checkpoint)
+        model.load_state_dict(torch.load(checkpoint))
 
     # initialize runner
     if args.subcmd == 'train':
