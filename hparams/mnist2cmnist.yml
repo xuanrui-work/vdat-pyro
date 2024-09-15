@@ -2,8 +2,13 @@ model:
   in_shape: [3, 32, 32]
 dataset:
   val_split: 0.2
-  src: {cls: MNIST, kwargs: null}
-  tgt: {cls: CMNIST, kwargs: null}
+  src:
+    cls: MNIST
+    kwargs: null
+  tgt:
+    cls: MNIST
+    kwargs:
+      tfs: {colorize: null}
 checkpoint: null
 device: cuda
 batch_size: 32

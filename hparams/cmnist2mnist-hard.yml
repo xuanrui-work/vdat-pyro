@@ -4,25 +4,25 @@ dataset:
   val_split: 0.2
   src:
     cls: MNIST
-    kwargs: null
+    kwargs:
+      tfs: {colorize: []}
   tgt:
     cls: MNIST
-    kwargs:
-      tfs: {rotate: null}
+    kwargs: null
 checkpoint: null
 device: cuda
-batch_size: 32
+batch_size: 64
 num_epochs: 400
 val_every: 1
 val_metric: loss
 n_vis: 50
 oparams:
   lr: 2.0e-4
-  betas: [0.5, 0.999]
+  betas: [0.9, 0.999]
   clip_grad: 1.0
   sche_n_steps: [100, 100]
 hparams:
-  w_domain: [0.5, 0.5]
+  w_domain: [0.9, 0.1]
   cg_threshold: 0.9
   w_cg: !!float -1.0e3
   w_ent_reg: 1.0e-5
