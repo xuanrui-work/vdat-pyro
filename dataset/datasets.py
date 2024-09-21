@@ -87,3 +87,27 @@ class USPS(VariantDataset):
         self.train = train
         self.val = val
         self.test = test
+
+class OfficeHome(VariantDataset):
+    def __init__(
+        self,
+        image_size: tuple[int,int] = (32, 32),
+        root: str = './cache/officehome',
+        which: str = 'Real World',
+        *args,
+        **kwargs
+    ):
+        super().__init__(image_size, root, *args, **kwargs)
+        self.which = which
+    
+    def load_dataset(self, transforms):
+        train = tvds.ImageFolder(
+            root=f'{self.root}/{self.which}',
+            transform=v2.Compose(transforms)
+        )
+        train, test = data.random_split(train, [1-self.test_split, self.test_split])
+        train, val = data.random_split(train, [1-self.val_split, self.val_split])
+
+        self.train = train
+        self.val = val
+        self.test = test

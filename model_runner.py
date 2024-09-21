@@ -166,6 +166,9 @@ class Trainer(TrainRunner):
     def step(self, xs, ys, xt, yt):
         self.last_batch = (xs, ys, xt, yt)
 
+        # print(xs.shape, ys.shape)
+        # print(xt.shape, yt.shape)
+
         N = xs.shape[0]
         model = self.model
         hparams = self.options.hparams
@@ -224,8 +227,8 @@ class Trainer(TrainRunner):
         h_all = torch.cat([outputs['h_A'], outputs['h_B']], dim=0)
         ent_h = self.entropy_fn(h_all.mean(0), torch.cov(h_all.T))
 
-        ent_reg = (ent_h/ent_z - hparams['ent_ratio'])**2
         if hparams['w_ent_reg'] > 0:
+            ent_reg = (ent_h/ent_z - hparams['ent_ratio'])**2
             loss += hparams['w_ent_reg'] * ent_reg
 
         self.optim.zero_grad()
