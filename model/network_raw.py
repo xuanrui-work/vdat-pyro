@@ -50,6 +50,16 @@ class VDTNetRaw(nn.Module):
         self.prior_h = CGaussPrior(n_cls, h_dim, requires_grad=True)
 
         self.validate_args = False
+
+        # def init_weights(m):
+        #     if type(m) == nn.Linear:
+        #         nn.init.normal_(m.weight, std=0.01)
+        #         nn.init.zeros_(m.bias)
+        #     elif type(m) == nn.Conv2d:
+        #         nn.init.normal_(m.weight, std=0.01)
+        #         nn.init.zeros_(m.bias)
+        
+        # self.apply(init_weights)
     
     def model(self, x, y=None, d='src'):
         """

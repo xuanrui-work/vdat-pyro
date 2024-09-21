@@ -220,11 +220,13 @@ class Trainer(TrainRunner):
         # entropy regularization
         z_all = torch.cat([outputs['z_A'], outputs['z_B']], dim=0)
         ent_z = self.entropy_fn(z_all.mean(0), torch.cov(z_all.T))
-        # loss += hparams['ent_reg'] * -ent_z
 
         h_all = torch.cat([outputs['h_A'], outputs['h_B']], dim=0)
         ent_h = self.entropy_fn(h_all.mean(0), torch.cov(h_all.T))
-        # loss += hparams['ent_reg'] * -ent_h
+
+        ent_reg = (ent_h/ent_z - hparams['ent_ratio'])**2
+        if hparams['w_ent_reg'] > 0:
+            loss += hparams['w_ent_reg'] * ent_reg
 
         self.optim.zero_grad()
         loss.backward()
