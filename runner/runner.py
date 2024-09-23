@@ -121,9 +121,9 @@ class EvalRunner(BaseRunner):
 class TrainRunner(BaseRunner):
     def __init__(
         self,
-        model: nn.Module|type,
+        model: nn.Module,
         save_dir: str,
-        eval_runner: EvalRunner = None,
+        eval_runner: EvalRunner,
         progbar: bool = False,
         options: RunnerOptions|dict = None
     ):
@@ -132,10 +132,6 @@ class TrainRunner(BaseRunner):
         self.writer = tb.SummaryWriter(self.save_dir)
 
         self.progbar = progbar
-
-        if eval_runner is None:
-            eval_runner = EvalRunner(self.model, '', progbar, options)
-            eval_runner.step = self.step
         self.eval_runner = eval_runner
 
         if self.options.val_metric[0] == '-':
