@@ -53,11 +53,6 @@ class Evaluator(EvalRunner):
         loss_t = self.loss_fn(outputs['y1_lo_B'], yt)
         loss = loss_s
 
-        if not isinstance(self, EvalRunner):   # to make compatible with default EvalRunner
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
-
         acc_s = (outputs['y1_lo_A'].argmax(-1) == ys).sum() / N
         acc_t = (outputs['y1_lo_B'].argmax(-1) == yt).sum() / N
 
@@ -115,10 +110,9 @@ class Trainer(TrainRunner):
         loss_t = self.loss_fn(outputs['y1_lo_B'], yt)
         loss = loss_s
 
-        if not isinstance(self, EvalRunner):   # to make compatible with default EvalRunner
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
 
         acc_s = (outputs['y1_lo_A'].argmax(-1) == ys).sum() / N
         acc_t = (outputs['y1_lo_B'].argmax(-1) == yt).sum() / N
