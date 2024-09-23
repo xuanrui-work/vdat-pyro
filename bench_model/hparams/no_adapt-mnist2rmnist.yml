@@ -1,0 +1,21 @@
+model:
+  in_shape: [3, 32, 32]
+dataset:
+  val_split: 0.2
+  src:
+    cls: MNIST
+    kwargs: null
+  tgt:
+    cls: MNIST
+    kwargs:
+      tfs: {shrink: null}
+checkpoint: null
+device: cuda
+batch_size: 128
+num_epochs: 50
+val_every: 1
+val_metric: acc_t
+oparams:
+  lr: 2.0e-6
+  betas: [0.9, 0.999]
+hparams: {}
