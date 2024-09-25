@@ -81,6 +81,23 @@ class EntropyFullGaussian(nn.Module):
     
     def forward(
         self,
+        mu: torch.Tensor, cov_L: torch.Tensor
+    ):
+        # for numerical stability
+        cov_L = cov_L + self.eps * torch.eye(cov_L.shape[-1], device=cov_L.device)
+        k = cov_L.shape[-1]
+        h = 0.5*(
+            2*torch.sum(torch.log(torch.diagonal(cov_L, dim1=-2, dim2=-1)), dim=-1) +
+            k*(1 + torch.log(torch.tensor(2*torch.pi, device=cov_L.device)))
+        )
+        if self.nan_to_num >= 0:
+            h = torch.nan_to_num(h, nan=self.nan_to_num)
+        if h.isnan().any():
+            warnings.warn('NaN encountered')
+        return h
+
+    def forward1(
+        self,
         mu: torch.Tensor, cov: torch.Tensor
     ):
         # for numerical stability
