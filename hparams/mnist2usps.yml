@@ -9,7 +9,7 @@ device: cuda
 batch_size: 32
 num_epochs: 400
 val_every: 1
-val_metric: acc_t
+val_metric: -acc_t
 n_vis: 50
 oparams:
   lr: 2.0e-4
