@@ -196,13 +196,17 @@ class Classifier(nn.Module):
         self.in_shape = in_shape
         self.n_cls = n_cls
     
-    def forward(self, x, d):
+    def foward_repr(self, x, d):
         bn_idx = 0
         for i, layer in enumerate(self.cnn_block.layers):
             x = layer(x)
             if isinstance(layer, nn.Conv2d):
                 x = self.bn_layers[bn_idx](x, d)
                 bn_idx += 1
+        return x
+    
+    def forward(self, x, d):
+        x = self.foward_repr(x, d)
         x = x.flatten(1)
         x = self.op_cls(x)
         return x

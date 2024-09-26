@@ -180,6 +180,9 @@ class TrainRunner(BaseRunner):
     
     def before_run(self):
         super().before_run()
+        
+        self.len_loader = min(*[len(loader) for loader in self.train_loaders])
+        self.num_steps = self.options.num_epochs * self.len_loader
 
         self.n_epoch = 0
         self.n_step = 0
