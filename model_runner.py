@@ -147,6 +147,10 @@ class Trainer(TrainRunner):
         # additional loss functions
         self.entropy_fn = EntropyFullGaussian()
 
+        # pre-defined default entropy for h and z
+        self.ent_h_def = self.entropy_fn(torch.zeros(model.h_dim), torch.eye(model.h_dim))
+        self.ent_z_def = self.entropy_fn(torch.zeros(model.z_dim), torch.eye(model.z_dim))
+
         # max entropy of classifier output
         self.ent_y_max = torch.distributions.Categorical(
             logits=torch.full((model.n_cls,), 1/model.n_cls, device=self.device)
@@ -221,15 +225,33 @@ class Trainer(TrainRunner):
             l_cls = torch.zeros(1)
 
         # entropy regularization
-        z_all = torch.cat([outputs['z_A'], outputs['z_B']], dim=0)
-        ent_z = self.entropy_fn(z_all.mean(0), torch.cov(z_all.T))
+        ent_zA = self.entropy_fn(None, outputs['z_cov_L_A'])
+        ent_zB = self.entropy_fn(None, outputs['z_cov_L_B'])
 
-        h_all = torch.cat([outputs['h_A'], outputs['h_B']], dim=0)
-        ent_h = self.entropy_fn(h_all.mean(0), torch.cov(h_all.T))
+        ent_hA = self.entropy_fn(None, outputs['h_cov_L_A'])
+        ent_hB = self.entropy_fn(None, outputs['h_cov_L_B'])
 
-        if hparams['w_ent_reg'] > 0:
-            ent_reg = (ent_h/ent_z - hparams['ent_ratio'])**2
-            loss += hparams['w_ent_reg'] * ent_reg
+        if hparams['w_er'] > 0:
+            er = (
+                F.relu(hparams['er_ratio'] - ent_zA.min()/self.ent_z_def) +
+                F.relu(hparams['er_ratio'] - ent_zB.min()/self.ent_z_def) +
+                F.relu(hparams['er_ratio'] - ent_hA.min()/self.ent_h_def) +
+                F.relu(hparams['er_ratio'] - ent_hB.min()/self.ent_h_def)
+            )**2
+            loss += hparams['w_er'] * er
+        
+        # label-domain relative entropy regularization
+        # TODO: DOES NOT WORK
+        if hparams['w_rer'] > 0:
+            avgent_h = (ent_hA.mean() + ent_hB.mean()) / 2
+            avgent_z = (ent_zA.mean() + ent_zB.mean()) / 2
+            rer = (avgent_h/avgent_z - hparams['rer_ratio'])**2
+            loss += hparams['w_rer'] * rer
+        
+        # cross-domain relative entropy regularization
+        if hparams['w_rer_d'] > 0:
+            rer_d = (ent_zB.mean() / ent_zA.mean() - hparams['rer_d_ratio'])**2
+            loss += hparams['w_rer_d'] * rer_d
 
         self.optim.zero_grad()
         loss.backward()
@@ -244,8 +266,10 @@ class Trainer(TrainRunner):
             'elbo_s1': elbo_s1,
             'l_cls_ord': l_cls_ord,
             'l_cls': l_cls,
-            'ent_z': ent_z,
-            'ent_h': ent_h,
+            'ent_zA': ent_zA.mean(),
+            'ent_zB': ent_zB.mean(),
+            'ent_hA': ent_hA.mean(),
+            'ent_hB': ent_hB.mean()
         }
         return loss_dict
 
