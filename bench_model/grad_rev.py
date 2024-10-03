@@ -25,6 +25,7 @@ class Model(nn.Module):
         self,
         in_shape=(3, 32, 32),
         n_cls=10,
+        fc_hidden_dims=(1024, 512),
         hparams=None
     ):
         super().__init__()
@@ -34,15 +35,26 @@ class Model(nn.Module):
         self.hparams = hparams
 
         self.classifier = Classifier(in_shape, n_cls)
-        self.domain_cls_head = nn.Linear(np.prod(self.classifier.cnn_block.out_shape), 2)
+        out_shape = self.classifier.cnn_block.out_shape
+
+        self.cls_head = MLP(
+            np.prod(out_shape),
+            n_cls,
+            hidden_dims=fc_hidden_dims
+        )
+        self.dcls_head = MLP(
+            np.prod(out_shape),
+            2,
+            hidden_dims=fc_hidden_dims
+        )
 
     def forward(self, x, d):
         x = self.classifier.foward_repr(x, d)
         x = x.flatten(1)
-        y1 = self.classifier.op_cls(x)
+        y1 = self.cls_head(x)
 
         x_rev = GradientReversalF.apply(x, self.hparams['alpha'])
-        d1 = self.domain_cls_head(x_rev)
+        d1 = self.dcls_head(x_rev)
 
         outputs = {
             'x': x,

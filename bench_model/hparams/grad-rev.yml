@@ -6,12 +6,11 @@ dataset:
     cls: MNIST
     kwargs: null
   tgt:
-    cls: MNIST
-    kwargs:
-      tfs: {shrink: null}
+    cls: USPS
+    kwargs: null
 checkpoint: null
 device: cuda
-batch_size: 128
+batch_size: 512
 num_epochs: 1000
 val_every: 1
 val_metric: -acc_t
