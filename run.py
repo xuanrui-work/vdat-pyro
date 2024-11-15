@@ -1,10 +1,9 @@
 from runner.options import RunnerOptions
-from model_runner import Evaluator, Trainer
 
-from model.network import VDTNet
 import torch
 
 import argparse
+import importlib
 import yaml
 from pathlib import Path
 from pprint import pprint
@@ -12,11 +11,15 @@ from pprint import pprint
 def main():
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('model', type=str)
+
     parser.add_argument('--config', type=str, default='./hparams/mnist2usps.yaml')
     parser.add_argument('--checkpoint', type=str)
 
     parser.add_argument('--save_root', type=str, default='./runs')
     parser.add_argument('--save_dir', type=str)
+
+    parser.add_argument('--verbose', action='store_true')
 
     sps = parser.add_subparsers(dest='subcmd', required=True)
     sp = sps.add_parser('train')
@@ -43,8 +46,18 @@ def main():
     options = RunnerOptions(**options)
     pprint(options.to_dict())
 
+    # find the corresponding module and load the needed classes
+    if args.model == 'main':
+        from model.network import VDTNet as Model
+        from model_runner import Evaluator, Trainer
+    else:
+        model_mod = importlib.import_module(f'bench_model.{args.model}')
+        Model = model_mod.Model
+        Trainer = model_mod.Trainer
+        Evaluator = model_mod.Evaluator
+
     # initialize model
-    model = VDTNet(hparams=options.hparams, **options.model.to_dict())
+    model = Model(hparams=options.hparams, **options.model.to_dict())
 
     checkpoint = options.checkpoint or args.checkpoint
     if checkpoint is not None:
@@ -68,7 +81,7 @@ def main():
             progbar=True,
             options=options
         )
-    
+
     else:
         parser.print_help()
         raise ValueError(f'invalid subcmd={args.subcmd}')
