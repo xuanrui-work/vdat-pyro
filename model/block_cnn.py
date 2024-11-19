@@ -89,7 +89,8 @@ class Decoder(nn.Module):
         out_shape=(3, 32, 32),
         hidden_dims=(512, 256, 128, 64),
         upsample=(2, 2, 2, 2),
-        normal_fn=lambda: nn.Sigmoid()
+        normal_fn=lambda: nn.Sigmoid(),
+        bn_mode='ds'
     ):
         super().__init__()
 
@@ -120,6 +121,8 @@ class Decoder(nn.Module):
         self.la_dim = la_dim
         self.in_shape = in_shape
         self.out_shape = out_shape
+
+        self.bn_mode = bn_mode
     
     def forward(self, h, d):
         x = self.in_layers(h)
@@ -127,7 +130,14 @@ class Decoder(nn.Module):
         for i, layer in enumerate(self.cnn_block.layers):
             x = layer(x)
             if isinstance(layer, nn.Conv2d):
-                x = self.bn_layers[bn_idx](x, d)
+                if self.bn_mode == 'ds':
+                    x = self.bn_layers[bn_idx](x, d)
+                elif self.bn_mode == 'reg':
+                    x = self.bn_layers[bn_idx](x, 'src')
+                elif self.bn_mode == '':
+                    pass
+                else:
+                    raise ValueError(f'invalid bn_mode: {self.bn_mode}')
                 bn_idx += 1
         x = self.out_layers(x)
         return x
@@ -138,7 +148,8 @@ class Encoder(nn.Module):
         in_shape=(3, 32, 32),
         la_dim=32,
         hidden_dims=(64, 128, 256, 512),
-        maxpools=(2, 2, 2, 2)
+        maxpools=(2, 2, 2, 2),
+        bn_mode='ds'
     ):
         super().__init__()
 
@@ -156,13 +167,22 @@ class Encoder(nn.Module):
         self.in_shape = in_shape
         self.la_dim = la_dim
         self.out_shape = cnn_block.out_shape
+
+        self.bn_mode = bn_mode
     
     def forward(self, x, d):
         bn_idx = 0
         for i, layer in enumerate(self.cnn_block.layers):
             x = layer(x)
             if isinstance(layer, nn.Conv2d):
-                x = self.bn_layers[bn_idx](x, d)
+                if self.bn_mode == 'ds':
+                    x = self.bn_layers[bn_idx](x, d)
+                elif self.bn_mode == 'reg':
+                    x = self.bn_layers[bn_idx](x, 'src')
+                elif self.bn_mode == '':
+                    pass
+                else:
+                    raise ValueError(f'invalid bn_mode: {self.bn_mode}')
                 bn_idx += 1
         x = x.flatten(1)
         mu = self.op_mu(x)
@@ -184,7 +204,8 @@ class Classifier(nn.Module):
         in_shape=(3, 32, 32),
         n_cls=10,
         hidden_dims=(64, 128, 256, 512),
-        maxpools=(2, 2, 2, 2)
+        maxpools=(2, 2, 2, 2),
+        bn_mode='ds'
     ):
         super().__init__()
 
@@ -195,13 +216,22 @@ class Classifier(nn.Module):
 
         self.in_shape = in_shape
         self.n_cls = n_cls
+
+        self.bn_mode = bn_mode
     
     def foward_repr(self, x, d):
         bn_idx = 0
         for i, layer in enumerate(self.cnn_block.layers):
             x = layer(x)
             if isinstance(layer, nn.Conv2d):
-                x = self.bn_layers[bn_idx](x, d)
+                if self.bn_mode == 'ds':
+                    x = self.bn_layers[bn_idx](x, d)
+                elif self.bn_mode == 'reg':
+                    x = self.bn_layers[bn_idx](x, 'src')
+                elif self.bn_mode == '':
+                    pass
+                else:
+                    raise ValueError(f'invalid bn_mode: {self.bn_mode}')
                 bn_idx += 1
         return x
     

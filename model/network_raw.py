@@ -49,7 +49,7 @@ class VDTNetRaw(nn.Module):
         self.prior_z = CGaussPrior(2, z_dim, requires_grad=True)
         self.prior_h = CGaussPrior(n_cls, h_dim, requires_grad=True)
 
-        self.validate_args = False
+        self.validate_args = True
 
         # def init_weights(m):
         #     if type(m) == nn.Linear:
