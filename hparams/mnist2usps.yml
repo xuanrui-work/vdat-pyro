@@ -2,8 +2,12 @@ model:
   in_shape: [3, 32, 32]
 dataset:
   val_split: 0.2
-  src: {cls: MNIST, kwargs: null}
-  tgt: {cls: USPS, kwargs: null}
+  src:
+    cls: MNIST
+    kwargs: null
+  tgt:
+    cls: USPS
+    kwargs: null
 checkpoint: null
 device: cuda
 batch_size: 32
@@ -18,6 +22,12 @@ oparams:
   sche_n_steps: [100, 100]
 hparams:
   w_domain: [0.5, 0.5]
-  cg_threshold: 0.9
+  # below fields are not used
   w_cg: !!float -1.0e3
-  w_ent_reg: 1.0e-5
+  cg_threshold: 0.9
+  w_er: !!float -1.0e3
+  er_ratio: 1
+  w_rer: !!float -1.0e3
+  rer_ratio: 1
+  w_rer_d: !!float -1.0e3
+  rer_d_ratio: 0.5
