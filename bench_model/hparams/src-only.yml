@@ -6,8 +6,9 @@ dataset:
     cls: MNIST
     kwargs: null
   tgt:
-    cls: USPS
-    kwargs: null
+    cls: MNIST
+    kwargs:
+      tfs: {shrink: null}
 checkpoint: null
 device: cuda
 batch_size: 128
