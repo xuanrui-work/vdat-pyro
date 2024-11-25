@@ -62,29 +62,6 @@ def main():
     checkpoint = options.checkpoint or args.checkpoint
     if checkpoint is not None:
         model.load_state_dict(torch.load(checkpoint))
-
-    # initialize runner
-    if args.subcmd == 'train':
-        options.checkpoint = args.checkpoint
-        runner = Trainer(
-            model,
-            save_dir,
-            progbar=True,
-            options=options
-        )
-    
-    elif args.subcmd == 'eval':
-        options.checkpoint = args.checkpoint
-        runner = Evaluator(
-            model,
-            save_dir,
-            progbar=True,
-            options=options
-        )
-
-    else:
-        parser.print_help()
-        raise ValueError(f'invalid subcmd={args.subcmd}')
     
     # load dataset
     import dataset.utils
@@ -106,7 +83,31 @@ def main():
         batch_size=options.batch_size,
         val_split=options.dataset.val_split
     )
-    runner.set_loaders(*loader.get_loaders())
+
+    # initialize runner
+    if args.subcmd == 'train':
+        options.checkpoint = args.checkpoint
+        runner = Trainer(
+            model,
+            save_dir,
+            progbar=True,
+            options=options
+        )
+        runner.set_loaders(*loader.get_loaders())
+    
+    elif args.subcmd == 'eval':
+        options.checkpoint = args.checkpoint
+        runner = Evaluator(
+            model,
+            save_dir,
+            progbar=True,
+            options=options
+        )
+        runner.set_loaders(loader.get_loaders()[2])
+
+    else:
+        parser.print_help()
+        raise ValueError(f'invalid subcmd={args.subcmd}')
 
     # execute runner
     runner.execute()
