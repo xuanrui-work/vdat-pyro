@@ -124,15 +124,17 @@ class Decoder(nn.Module):
 
         self.bn_mode = bn_mode
     
-    def forward(self, h, d):
+    def forward(self, h, d=None):
         x = self.in_layers(h)
         bn_idx = 0
         for i, layer in enumerate(self.cnn_block.layers):
             x = layer(x)
             if isinstance(layer, nn.Conv2d):
                 if self.bn_mode == 'ds':
+                    if d is None:
+                        raise ValueError('missing `d` while `self.bn_mode == "ds"`')
                     x = self.bn_layers[bn_idx](x, d)
-                elif self.bn_mode == 'reg':
+                elif self.bn_mode == 'vanilla':
                     x = self.bn_layers[bn_idx](x, 'src')
                 elif self.bn_mode == '':
                     pass
@@ -170,14 +172,16 @@ class Encoder(nn.Module):
 
         self.bn_mode = bn_mode
     
-    def forward(self, x, d):
+    def forward(self, x, d=None):
         bn_idx = 0
         for i, layer in enumerate(self.cnn_block.layers):
             x = layer(x)
             if isinstance(layer, nn.Conv2d):
                 if self.bn_mode == 'ds':
+                    if d is None:
+                        raise ValueError('missing `d` while `self.bn_mode == "ds"`')
                     x = self.bn_layers[bn_idx](x, d)
-                elif self.bn_mode == 'reg':
+                elif self.bn_mode == 'vanilla':
                     x = self.bn_layers[bn_idx](x, 'src')
                 elif self.bn_mode == '':
                     pass
@@ -219,14 +223,16 @@ class Classifier(nn.Module):
 
         self.bn_mode = bn_mode
     
-    def foward_repr(self, x, d):
+    def foward_repr(self, x, d=None):
         bn_idx = 0
         for i, layer in enumerate(self.cnn_block.layers):
             x = layer(x)
             if isinstance(layer, nn.Conv2d):
                 if self.bn_mode == 'ds':
+                    if d is None:
+                        raise ValueError('missing `d` while `self.bn_mode == "ds"`')
                     x = self.bn_layers[bn_idx](x, d)
-                elif self.bn_mode == 'reg':
+                elif self.bn_mode == 'vanilla':
                     x = self.bn_layers[bn_idx](x, 'src')
                 elif self.bn_mode == '':
                     pass
@@ -235,7 +241,7 @@ class Classifier(nn.Module):
                 bn_idx += 1
         return x
     
-    def forward(self, x, d):
+    def forward(self, x, d=None):
         x = self.foward_repr(x, d)
         x = x.flatten(1)
         x = self.op_cls(x)

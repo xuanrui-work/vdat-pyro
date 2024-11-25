@@ -23,6 +23,9 @@ class VDTNetRaw(nn.Module):
 
         in_dim = np.prod(in_shape)
         la_dim = h_dim + z_dim
+        
+        self.in_dim = in_dim
+        self.la_dim = la_dim
 
         self.in_shape = in_shape
         self.n_cls = n_cls
