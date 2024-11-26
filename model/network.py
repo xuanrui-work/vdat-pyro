@@ -13,6 +13,7 @@ class VDTNet(VDTNetRaw):
 
         self.set_hparams(hparams)
         self.grad_mode('network')
+        self.trans_mode('sample')
     
     def set_hparams(self, hparams):
         self.hparams = hparams
@@ -38,6 +39,11 @@ class VDTNet(VDTNetRaw):
         else:
             raise ValueError(f'invalid grad mode={mode}')
         self.mode = mode
+    
+    def trans_mode(self, mode='sample'):
+        if mode not in ('sample', 'mean'):
+            raise ValueError(f'invalid inference mode={mode}')
+        self.mode_trans = mode
     
     def forward(self, x, y=None, d='src'):
         # infer latents and outputs
@@ -76,28 +82,31 @@ class VDTNet(VDTNetRaw):
         # domain translation
         mu1, mu2 = self.prior_z.mu
         cov_L1, cov_L2 = self.prior_z.get_cov_L()
+        tod = 'tgt'
+        tag = 'AB'
 
-        if d == 'src':
-            R_AB, b_AB = find_transform(mu1, cov_L1, mu2, cov_L2)
-            z_AB = z @ R_AB.T + b_AB
+        if d == 'tgt':  # swap the means and covariances for translating from target to source
+            t1, t2 = mu2, cov_L2
+            mu2, cov_L2 = mu1, cov_L1
+            mu1, cov_L1 = t1, t2
+            tod = 'src'
+            tag = 'BA'
 
-            guide_trace.nodes['z']['value'] = z_AB
-            model_trace = poutine.trace(poutine.replay(self.model, guide_trace)).get_trace(x, y, d='tgt')
+        R_AB, b_AB = find_transform(mu1, cov_L1, mu2, cov_L2)
 
-            outputs.update({
-                'z_AB': z_AB,
-                'x_AB': model_trace.nodes['x']['fn'].base_dist.loc
-            })
-        elif d == 'tgt':
-            R_BA, b_BA = find_transform(mu2, cov_L2, mu1, cov_L1)
-            z_BA = z @ R_BA.T + b_BA
+        if self.mode_trans == 'mean':
+            z = guide_trace.nodes['z']['fn'].loc
+            h = guide_trace.nodes['h']['fn'].loc
+        z_AB = z @ R_AB.T + b_AB
+        h_AB = h
 
-            guide_trace.nodes['z']['value'] = z_BA
-            model_trace = poutine.trace(poutine.replay(self.model, guide_trace)).get_trace(x, y, d='src')
+        guide_trace.nodes['z']['value'] = z_AB
+        guide_trace.nodes['h']['value'] = h_AB
+        model_trace = poutine.trace(poutine.replay(self.model, guide_trace)).get_trace(x, y, d=tod)
 
-            outputs.update({
-                'z_BA': z_BA,
-                'x_BA': model_trace.nodes['x']['fn'].base_dist.loc
-            })
+        outputs.update({
+            'z_'+tag: z_AB,
+            'x_'+tag: model_trace.nodes['x']['fn'].base_dist.loc
+        })
         
         return outputs
