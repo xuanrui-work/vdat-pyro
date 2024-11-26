@@ -22,7 +22,7 @@ class BaseRunner:
             save_dir = Path(save_dir)
             save_dir.mkdir(parents=True, exist_ok=True)
 
-            with open(save_dir/'options.yaml', 'w') as f:
+            with open(save_dir/'options.yml', 'w') as f:
                 yaml.safe_dump(options.to_dict(), f)
 
         self.model = model
