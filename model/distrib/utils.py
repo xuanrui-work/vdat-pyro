@@ -7,7 +7,7 @@ from scipy.stats import multivariate_normal
 from sklearn.decomposition import PCA
 
 def find_transform(mu1, cov1, mu2, cov2):
-    # torch.linalg.eigh returns sorted eigenvalues and eigenvectors
+    # torch.linalg.eigh returns sorted (ascending order) eigenvalues and eigenvectors
     L1, Q1 = torch.linalg.eigh(cov1)
     L2, Q2 = torch.linalg.eigh(cov2)
     L12 = torch.diag_embed(torch.sqrt(L2 / L1))
