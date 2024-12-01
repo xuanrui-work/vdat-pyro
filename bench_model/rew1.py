@@ -1,4 +1,3 @@
-from .cg import CycleGAN as CycleGAN
 from model.block_cnn import *
 
 from runner.runner import TrainRunner, EvalRunner
@@ -15,7 +14,7 @@ class Model(nn.Module):
     def __init__(
         self,
         in_shape=(3, 32, 32),
-        n_cls=10,
+        n_cls=2,
         fc_hidden_dims=(1024, 512),
         hparams=None
     ):
@@ -25,26 +24,13 @@ class Model(nn.Module):
         self.n_cls = n_cls
         self.hparams = hparams
 
-        self.cycle_gan = CycleGAN()
-        self.cycle_gan.load_state_dict(torch.load(hparams['cycle_gan']))
-
-        self.classifier = Classifier(in_shape, n_cls, hidden_dims=(64, 128, 256))
-        out_shape = self.classifier.cnn_block.out_shape
-
-        self.cls_head = MLP(
-            np.prod(out_shape),
-            n_cls,
-            hidden_dims=fc_hidden_dims
-        )
+        self.classifier = Classifier(in_shape, n_cls, bn_mode='vanilla')
 
     def forward(self, x, d):
-        x = self.classifier.foward_repr(x, d)
-        x = x.flatten(1)
-        y1 = self.cls_head(x)
-
+        d1 = self.classifier(x, d)
         outputs = {
             'x': x,
-            'y1_lo': y1
+            'd1_lo': d1
         }
         if d == 'src':
             outputs = {k+'_A': v for k, v in outputs.items()}
@@ -62,26 +48,28 @@ class Evaluator(EvalRunner):
     def step(self, xs, ys, xt, yt):
         N = xs.shape[0]
 
-        cg_outs = self.model.cycle_gan()
-        xs = cg_outs['fake_AB']
-
         outputs = {}
         outputs.update(self.model(xs, 'src'))
         outputs.update(self.model(xt, 'tgt'))
 
-        loss_s = self.loss_fn(outputs['y1_lo_A'], ys)
-        loss_t = self.loss_fn(outputs['y1_lo_B'], yt)
-        loss = loss_s
+        ds = torch.tensor([0]*N, device=xs.device)
+        dt = torch.tensor([1]*N, device=xt.device)
+        ld_s = self.loss_fn(outputs['d1_lo_A'], ds)
+        ld_t = self.loss_fn(outputs['d1_lo_B'], dt)
 
-        acc_s = (outputs['y1_lo_A'].argmax(-1) == ys).sum() / N
-        acc_t = (outputs['y1_lo_B'].argmax(-1) == yt).sum() / N
+        loss = (ld_s + ld_t) / 2
+
+        acc_ds = (outputs['d1_lo_A'].argmax(-1) == 0).sum() / N
+        acc_dt = (outputs['d1_lo_B'].argmax(-1) == 1).sum() / N
+        acc = (acc_ds + acc_dt) / 2
 
         loss_dict = {
             'loss': loss,
-            'ce_s': loss_s,
-            'ce_t': loss_t,
-            'acc_s': acc_s,
-            'acc_t': acc_t
+            'ld_s': ld_s,
+            'ld_t': ld_t,
+            'acc': acc,
+            'acc_ds': acc_ds,
+            'acc_dt': acc_dt
         }
         return loss_dict
 
@@ -122,30 +110,31 @@ class Trainer(TrainRunner):
     def step(self, xs, ys, xt, yt):
         N = xs.shape[0]
 
-        cg_outs = self.model.cycle_gan()
-        xs = cg_outs['fake_AB']
-
         outputs = {}
         outputs.update(self.model(xs, 'src'))
         outputs.update(self.model(xt, 'tgt'))
 
-        loss_s = self.loss_fn(outputs['y1_lo_A'], ys)
-        loss_t = self.loss_fn(outputs['y1_lo_B'], yt)
+        ds = torch.tensor([0]*N, device=xs.device)
+        dt = torch.tensor([1]*N, device=xt.device)
+        ld_s = self.loss_fn(outputs['d1_lo_A'], ds)
+        ld_t = self.loss_fn(outputs['d1_lo_B'], dt)
 
-        loss = loss_s
+        loss = (ld_s + ld_t) / 2
 
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
-        acc_s = (outputs['y1_lo_A'].argmax(-1) == ys).sum() / N
-        acc_t = (outputs['y1_lo_B'].argmax(-1) == yt).sum() / N
+        acc_ds = (outputs['d1_lo_A'].argmax(-1) == 0).sum() / N
+        acc_dt = (outputs['d1_lo_B'].argmax(-1) == 1).sum() / N
+        acc = (acc_ds + acc_dt) / 2
 
         loss_dict = {
             'loss': loss,
-            'ce_s': loss_s,
-            'ce_t': loss_t,
-            'acc_s': acc_s,
-            'acc_t': acc_t
+            'ld_s': ld_s,
+            'ld_t': ld_t,
+            'acc': acc,
+            'acc_ds': acc_ds,
+            'acc_dt': acc_dt
         }
         return loss_dict

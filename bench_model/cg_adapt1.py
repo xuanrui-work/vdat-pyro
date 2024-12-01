@@ -13,6 +13,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+import pathlib
+import torchvision.utils as tvutils
+
 class CNNEncoder(nn.Module):
     def __init__(
         self,
@@ -246,6 +249,7 @@ class GANLoss(nn.Module):
 class CycleGAN(nn.Module):
     def __init__(
         self,
+        in_shape=(3, 32, 32),
         hparams=None
     ):
         super().__init__()
@@ -263,21 +267,19 @@ class CycleGAN(nn.Module):
 
         # loss dict
         self.loss_dict = {}
-        self.init_optimizers()
+        # self.init_optimizers()
 
-    def init_optimizers(self):
-        hparams = self.hparams
-
+    def init_optimizers(self, oparams):
         # optimizers
         self.optim_G = torch.optim.Adam(
             list(self.G_AB.parameters()) + list(self.G_BA.parameters()),
-            lr=hparams['lr'],
-            betas=(hparams['betas'][0], hparams['betas'][1])
+            lr=oparams['lr'],
+            betas=(oparams['betas'][0], oparams['betas'][1])
         )
         self.optim_D = torch.optim.Adam(
             list(self.D_A.parameters()) + list(self.D_B.parameters()),
-            lr=hparams['lr'],
-            betas=(hparams['betas'][0], hparams['betas'][1])
+            lr=oparams['lr'],
+            betas=(oparams['betas'][0], oparams['betas'][1])
         )
     
     def set_hparams(self, hparams):
@@ -365,6 +367,7 @@ class CycleGAN(nn.Module):
         )
 
         self.loss_dict.update({
+            'loss_G': loss_G,
             'l_G_AB': l_G_AB,
             'l_G_BA': l_G_BA,
             'l_cyc_A': l_cyc_ABA,
@@ -397,11 +400,25 @@ class CycleGAN(nn.Module):
         return (outputs, self.loss_dict)
 
 class Visualizer:
-    def __init__(self, model, writer, device, batch_size=64):
+    def __init__(
+        self,
+        model,
+        writer,
+        device,
+        batch_size=64,
+        save_dir=''
+    ):  
         self.model = model
         self.writer = writer
         self.device = device
         self.batch_size = batch_size
+
+        if save_dir:
+            save_dir = pathlib.Path(save_dir)
+            save_dir.mkdir(parents=True, exist_ok=True)
+        else:
+            save_dir = None
+        self.save_dir = save_dir
     
     def vis_samples(self, samples, step, tag, mode='ab'):
         outputs_all = {}
@@ -430,6 +447,14 @@ class Visualizer:
         for k, v in outputs_all.items():
             outputs_all[k] = torch.cat(v, dim=0)
             self.writer.add_images(f'{tag}/{k}', outputs_all[k], step)
+            if self.save_dir:
+                    self.save_images(outputs_all[k], step, f'{tag}/{k}')
+    
+    def save_images(self, images, step, tag):
+        grid_img = tvutils.make_grid(images, nrow=10)
+        tag = tag.replace('/', '_')
+        filepath = self.save_dir / f'{tag}_{step}.png'
+        tvutils.save_image(grid_img, filepath)
 
 Model = CycleGAN
 
@@ -489,8 +514,10 @@ class Trainer(TrainRunner):
     def before_run(self):
         super().before_run()
 
+        # init visualization
+        self.init_visualize()
         # setup optimizer
-        self.model.init_optimizers()
+        self.model.init_optimizers(self.options.oparams)
 
     def step(self, xs, ys, xt, yt):
         outputs, loss_dict = self.model.optimize_params(xs, xt)
