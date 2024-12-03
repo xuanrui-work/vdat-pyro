@@ -25,23 +25,18 @@ class Model(nn.Module):
         self.n_cls = n_cls
         self.hparams = hparams
 
-        self.cycle_gan = CycleGAN()
-        self.cycle_gan.load_state_dict(torch.load(hparams['cycle_gan']))
+        self.classifier = Classifier(in_shape, n_cls, bn_mode='ds')
 
-        self.classifier = Classifier(in_shape, n_cls, hidden_dims=(64, 128, 256))
-        out_shape = self.classifier.cnn_block.out_shape
+        cycle_gan = CycleGAN(hparams={})
+        cycle_gan.load_state_dict(torch.load(hparams['cg_ckpt']))
 
-        self.cls_head = MLP(
-            np.prod(out_shape),
-            n_cls,
-            hidden_dims=fc_hidden_dims
-        )
+        for params in cycle_gan.parameters():
+            params.requires_grad = False
+        
+        self.cycle_gan = cycle_gan
 
     def forward(self, x, d):
-        x = self.classifier.foward_repr(x, d)
-        x = x.flatten(1)
-        y1 = self.cls_head(x)
-
+        y1 = self.classifier(x, d)
         outputs = {
             'x': x,
             'y1_lo': y1
@@ -62,7 +57,7 @@ class Evaluator(EvalRunner):
     def step(self, xs, ys, xt, yt):
         N = xs.shape[0]
 
-        cg_outs = self.model.cycle_gan()
+        cg_outs = self.model.cycle_gan(x_A=xs, x_B=xt)
         xs = cg_outs['fake_AB']
 
         outputs = {}
@@ -122,8 +117,8 @@ class Trainer(TrainRunner):
     def step(self, xs, ys, xt, yt):
         N = xs.shape[0]
 
-        cg_outs = self.model.cycle_gan()
-        xs = cg_outs['fake_AB']
+        cg_outs = self.model.cycle_gan(x_A=xs, x_B=xt)
+        xs = cg_outs['fake_AB'].detach()
 
         outputs = {}
         outputs.update(self.model(xs, 'src'))
