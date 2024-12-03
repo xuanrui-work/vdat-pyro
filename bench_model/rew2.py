@@ -25,7 +25,7 @@ class Model(nn.Module):
         self.n_cls = n_cls
         self.hparams = hparams
 
-        self.classifier = Classifier(in_shape, n_cls)
+        self.classifier = Classifier(in_shape, n_cls, bn_mode='ds')
 
         self.d_cls = DomainClassifier()
         self.d_cls.load_state_dict(torch.load(hparams['dcls_ckpt']))

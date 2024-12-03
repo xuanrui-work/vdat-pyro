@@ -24,7 +24,7 @@ class Model(nn.Module):
         self.n_cls = n_cls
         self.hparams = hparams
 
-        self.classifier = Classifier(in_shape, n_cls, bn_mode='vanilla')
+        self.classifier = Classifier(in_shape, n_cls, bn_mode='ds')
 
     def forward(self, x, d):
         d1 = self.classifier(x, d)
