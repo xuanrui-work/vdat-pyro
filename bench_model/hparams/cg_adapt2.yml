@@ -20,3 +20,4 @@ oparams:
   betas: [0.9, 0.999]
 hparams:
   cg_ckpt: "C:\\Users\\xuanr\\Desktop\\Projects\\vdt2-pyro-3\\runs\\run1\\best_model.pth"
+
