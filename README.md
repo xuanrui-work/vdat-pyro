@@ -70,15 +70,14 @@ We name our approach **variational domain adapatation/translation (VDAT)**, sinc
 </table>
 
 **Figure 1:** Results for domain translation using MNIST-style digits as the source domain and some other datasets as target domains.
-
 <table style="width:100%; table-layout: fixed; text-align: center;">
   <tr>
-    <td><img src="./docs/images/mnist2usps-xA.png" alt="Inputs" width="100%"><br><em>Figure 1a: Inputs to our domain translation pipeline--samples from MNIST.</em></td>
-    <td><img src="./docs/images/mnist2usps-xAB.png" alt="MNIST→USPS" width="100%"><br><em>Figure 1b: MNIST→USPS.</em></td>
+    <td><img src="./docs/images/mnist2usps-xA.png" alt="Inputs" width="500"><br><em>Figure 1a: Inputs to our domain translation pipeline--samples from MNIST.</em></td>
+    <td><img src="./docs/images/mnist2usps-xAB.png" alt="MNIST→USPS" width="500%"><br><em>Figure 1b: MNIST→USPS.</em></td>
   </tr>
   <tr>
-    <td><img src="./docs/images/mnist2mnist-r-xAB.png" alt="MNIST→MNIST-r" width="100%"><br><em>Figure 1c: MNIST→MNIST-r.</em></td>
-    <td><img src="./docs/images/mnist2mnist-s-xAB.png" alt="MNIST→MNIST-s" width="100%"><br><em>Figure 1d: MNIST→MNIST-s.</em></td>
+    <td><img src="./docs/images/mnist2mnist-r-xAB.png" alt="MNIST→MNIST-r" width="500%"><br><em>Figure 1c: MNIST→MNIST-r.</em></td>
+    <td><img src="./docs/images/mnist2mnist-s-xAB.png" alt="MNIST→MNIST-s" width="500%"><br><em>Figure 1d: MNIST→MNIST-s.</em></td>
   </tr>
 </table>
 
