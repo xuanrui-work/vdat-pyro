@@ -111,3 +111,4 @@ class OfficeHome(VariantDataset):
         self.train = train
         self.val = val
         self.test = test
+
