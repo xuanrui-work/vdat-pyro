@@ -10,6 +10,25 @@ We name our approach **variational domain adapatation/translation (VDAT)**, sinc
 * Adapt a classifier model onto out-of-distribution data using unlabeled examples!
 * Translate input examples from one data domain to look alike the other!
 
+## Overview
+VDAT is an approach to unsupervised domain adaptation (UDA) based on generative modeling where generative assumptions tailored to UDA are introduced in the form of latent variables in the probabilistic model. The overall architecture of VDAT is shown in the Figure 1 below.
+
+**Figure 1:** Probabilistic model underlying VDAT.
+<table style="width:100%; table-layout: fixed; text-align: center;">
+  <tr>
+    <td><img src="./docs/images/generative-model.png" alt="Inputs" width="100%"><br><em>Figure 1a: Generative model $p_\theta(x,y,h,z,d)$.</em></td>
+    <td><img src="./docs/images/inference-model.png" alt="MNIST→USPS" width="100%"><br><em>Figure 1b: Inference model $q_phi(h,z|x,y,d) / q_phi(h,z,y|x,d)$.</em></td>
+  </tr>
+</table>
+
+The variables in our model are:
+* $x$ : **Observed**. The input data. 
+* $y$ : **Partially observed**. The output label. Observed for the source examples and unobserved for the target examples.
+* $d$ : **Observed**. The domain of the input data.
+* $h$ : **Unobserved**. *Domain-invariant factors* -- A representation of the input that is invariant across domains but inform the label.
+* $z$ : **Unobserved**. *Domain-specific factors* -- A representation of the input that is invariant across labels but inform the domain.
+
+The final predictor is obtained through $q_\phi(y|x)$, the variational approximation to the posterior $p_\theta(y|x)$.
 
 ## Results
 <table>
@@ -17,10 +36,10 @@ We name our approach **variational domain adapatation/translation (VDAT)**, sinc
 <thead>
 <tr>
     <th>Method</th>
-    <th>M→U</th>
-    <th>M→M-s</th>
-    <th>M→M-r</th>
-    <th>S→M</th>
+    <th>MNIST→USPS</th>
+    <th>MNIST→MNIST-s</th>
+    <th>MNIST→MNIST-r</th>
+    <th>SVHN→MNIST</th>
 </tr>
 </thead>
 <tbody>
@@ -69,15 +88,15 @@ We name our approach **variational domain adapatation/translation (VDAT)**, sinc
 </tbody>
 </table>
 
-**Figure 1:** Results for domain translation using MNIST digits as the source domain and some other datasets as target domains.
+**Figure 2:** Results for domain translation using MNIST digits as the source domain and some other datasets as target domains.
 <table style="width:100%; table-layout: fixed; text-align: center;">
   <tr>
-    <td><img src="./docs/images/mnist2usps-xA.png" alt="Inputs" width="100%"><br><em>Figure 1a: Samples from MNIST.</em></td>
-    <td><img src="./docs/images/mnist2usps-xAB.png" alt="MNIST→USPS" width="100%"><br><em>Figure 1b: MNIST→USPS.</em></td>
+    <td><img src="./docs/images/mnist2usps-xA.png" alt="Inputs" width="100%"><br><em>Figure 2a: Samples from MNIST.</em></td>
+    <td><img src="./docs/images/mnist2usps-xAB.png" alt="MNIST→USPS" width="100%"><br><em>Figure 2b: MNIST→USPS.</em></td>
   </tr>
   <tr>
-    <td><img src="./docs/images/mnist2mnist-r-xAB.png" alt="MNIST→MNIST-r" width="100%"><br><em>Figure 1c: MNIST→MNIST-r.</em></td>
-    <td><img src="./docs/images/mnist2mnist-s-xAB.png" alt="MNIST→MNIST-s" width="100%"><br><em>Figure 1d: MNIST→MNIST-s.</em></td>
+    <td><img src="./docs/images/mnist2mnist-r-xAB.png" alt="MNIST→MNIST-r" width="100%"><br><em>Figure 2c: MNIST→MNIST-r.</em></td>
+    <td><img src="./docs/images/mnist2mnist-s-xAB.png" alt="MNIST→MNIST-s" width="100%"><br><em>Figure 2d: MNIST→MNIST-s.</em></td>
   </tr>
 </table>
 
